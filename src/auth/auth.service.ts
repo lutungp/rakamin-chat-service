@@ -1,77 +1,73 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-// import { LoginUserDto } from '../users/dto/login-user.dto';
-// import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/users.service';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import * as bcrypt from 'bcrypt';
+import { LoginUserDto } from '../users/dto/login-user.dto';
 
 @Injectable()
 export class AuthService {
 
-    // constructor(private usersService: UsersService, private jwtService: JwtService){
+    constructor(private usersService: UsersService, private jwtService: JwtService){}
 
-    // }
+    async validateUserByPassword(loginAttempt: LoginUserDto) {
 
-    // async validateUserByPassword(loginAttempt: LoginUserDto) {
+        // This will be used for the initial login
+        let userToAttempt = await this.usersService.findOneByEmail(loginAttempt.email, true);
+        if (userToAttempt == null) {
+            return { status: 401 };
+        }        
 
-    //     // This will be used for the initial login
-    //     let userToAttempt = await this.usersService.findOneByEmail(loginAttempt.email);
-
-    //     if (userToAttempt == null) {
-    //         return { status: 401 };
-    //     }        
-
-    //     const state = await this.checkPassword(loginAttempt.password, userToAttempt);
-
-    //     const promise: any = await new Promise(async resolve => {
-    //         const state = await this.checkPassword(loginAttempt.password, userToAttempt);
-    //         if (state) {
-    //             resolve(this.createJwtPayload(userToAttempt));
-    //         } else {
-    //             resolve({ status: 401 });
-    //         }
-    //     });
-
-    //     return promise;
-    // }
-
-    // async validateUserByJwt(payload: JwtPayload) { 
+        const state = await this.checkPassword(loginAttempt.password, userToAttempt);
         
-    //     // This will be used when the user has already logged in and has a JWT
-    //     let user = await this.usersService.findOneByEmail(payload.email);
+        const promise: any = await new Promise(async resolve => {
+            const state = await this.checkPassword(loginAttempt.password, userToAttempt);
+            if (state) {
+                resolve(this.createJwtPayload(userToAttempt));
+            } else {
+                resolve({ status: 401 });
+            }
+        });
 
-    //     if(user){
-    //         return user;
-    //     } else {
-    //         throw new UnauthorizedException();
-    //     }
+        return promise;
+    }
 
-    // }
+    async validateUserByJwt(payload: JwtPayload) { 
+        
+        // This will be used when the user has already logged in and has a JWT
+        let user = await this.usersService.findOneByEmail(payload.email, false);
 
-    // createJwtPayload(user){
+        if(user){
+            return user;
+        } else {
+            throw new UnauthorizedException();
+        }
 
-    //     let data: JwtPayload = {
-    //         email: user.email
-    //     };
+    }
 
-    //     let jwt = this.jwtService.sign(data);
+    createJwtPayload(user){
 
-    //     return {
-    //         expiresIn: 3600,
-    //         token: jwt            
-    //     }
+        let data: JwtPayload = {
+            email: user.email
+        };
 
-    // }
+        let jwt = this.jwtService.sign(data);
 
-    // async checkPassword(password: string, user): Promise<boolean> {
-    //     return new Promise(async resolve => {
-    //         await bcrypt.compare(password, user.password, async (err, isMatch) => {
-    //             if (err) {
-    //                 return err;
-    //             }
-    //             resolve(isMatch);
-    //         });
-    //     });
-    // }
+        return {
+            expiresIn: 3600,
+            token: jwt            
+        }
+    }
+
+    async checkPassword(password: string, user): Promise<boolean> {
+        return new Promise(async resolve => {
+            bcrypt.compare(password, user.password, async (err, isMatch) => {
+                if (err) {
+                    return err;
+                }
+                resolve(isMatch);
+            });
+        });
+    }
 
 }

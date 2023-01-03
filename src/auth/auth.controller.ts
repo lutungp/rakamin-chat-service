@@ -3,31 +3,38 @@ import { AuthService } from './auth.service';
 // import { LoginUserDto } from '../users/dto/login-user.dto'
 // import { CreateUserDto } from '../users/dto/create-user.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-// import { UsersService } from 'src/users/users.service';
+import { UsersService } from '../users/users.service';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { LoginUserDto } from '../users/dto/login-user.dto';
 
 @Controller('auth')
 export class AuthController {
 
-    // constructor(
-    //     private authService: AuthService,
-    //     private readonly usersService: UsersService
-    // ) {
+    constructor(
+        private authService: AuthService,
+        private readonly usersService: UsersService
+    ) {
 
-    // }
+    }
 
-    // @Post('login')
-    // async login(@Body() loginUserDto: LoginUserDto){
-    //     return await this.authService.validateUserByPassword(loginUserDto);
-    // }
+    @Post('login')
+    async login(@Body() loginUserDto: LoginUserDto){
+        return await this.authService.validateUserByPassword(loginUserDto);
+    }
 
-    // @Post('register')
-    // async create(@Body() CreateUserDto: CreateUserDto){
-    //     return await this.usersService.create(CreateUserDto);
-    // }
+    @Post('register')
+    async create(@Body() CreateUserDto: CreateUserDto){
+        const register = await this.usersService.create(CreateUserDto);
+        if (typeof register.driverError === 'undefined') {
+            return { 'message' : 'Success' };    
+        }
 
-    // @UseGuards(JwtAuthGuard)
-    // @Get('profile')
-    // getProfile(@Request() req) {
-    //     return req.user;
-    // }
+        return register;
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('profile')
+    getProfile(@Request() req) {
+        return req.user;
+    }
 }
